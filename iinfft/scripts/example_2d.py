@@ -1,21 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from iinfft.iinfft import *
-plt.style.use('tableau-colorblind10')
 import sym_matrix
-
 import matplotlib
-matplotlib.use('TkAgg')
-
 from scipy.io import loadmat
 
+matplotlib.use('TkAgg')
+
+# Load the modified image
 image = np.load('iinfft/data/modified_image.npy')
 
-
 # Forward transform
-N = 64
-w = sobk(N,1,2,1e-2)
-transformed_data, mtot = infft_2d(image, N,w=w)
+N = 128
+w = sobk(N, 1, 2, 1e-2)
+transformed_data, mtot = infft_2d(image, N, w=w)
 
 # Adjoint transform (reconstruction)
 reconstructed_data = adjoint_transform_2d(
@@ -24,27 +22,62 @@ reconstructed_data = adjoint_transform_2d(
     data_shape=image.shape
 )
 
+# Load the .mat file
+file_path = "iinfft/data/tic.mat"
+mat_data = loadmat(file_path)
+original_image = mat_data['M']  # Replace with your actual variable name
+
 # Replace NaNs in the original image with interpolated values
-interpolated_image = np.copy(image)  # Copy the original image
-nan_mask = np.isnan(image)  # Identify NaN locations
-interpolated_image[nan_mask] = reconstructed_data[nan_mask]  # Replace NaNs with reconstructed values
+interpolated_image = np.copy(image)
+nan_mask = np.isnan(image)
+interpolated_image[nan_mask] = reconstructed_data[nan_mask]
 
-# Visualize results
-plt.figure(figsize=(15, 5))
-plt.subplot(1, 3, 1)
-plt.title("Original Data")
-plt.imshow(image, aspect='auto', cmap='viridis')
-plt.colorbar()
+# Use "magma" colormap (low values = deep purple, high values = bright yellow)
+cmap_choice = 'magma'
 
-plt.subplot(1, 3, 2)
-plt.title("Reconstructed Data")
-plt.imshow(reconstructed_data, aspect='auto', cmap='viridis')
-plt.colorbar()
+# Get dynamic limits for better visibility
+vmin = np.nanmin(image)  
+vmax = np.nanmax(image) * 0.6  # Reduce max brightness for better mid-range detail
 
-plt.subplot(1, 3, 3)
-plt.title("Original with Interpolated NaNs")
-plt.imshow(interpolated_image, aspect='auto', cmap='viridis')
-plt.colorbar()
+# Define highlight region
+x_min, x_max = 1000, 1200
+y_min, y_max = 100, 200
+
+# Create figure with full images and highlighted region
+fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+
+titles = ["Original TIC", "TIC with NaNs", "Reconstruction", "Original with Interpolated NaNs"]
+images = [original_image, image, reconstructed_data, interpolated_image]
+
+for ax, title, img in zip(axes.flat, titles, images):
+    ax.set_title(title)
+    im = ax.imshow(img, aspect='auto', cmap=cmap_choice, vmin=vmin, vmax=vmax)
+    ax.invert_yaxis()
+    ax.add_patch(plt.Rectangle((x_min, y_min), x_max - x_min, y_max - y_min,
+                               edgecolor='red', facecolor='none', linewidth=2))
+    plt.colorbar(im, ax=ax)
 
 plt.tight_layout()
+
+# Save full image with highlights
+full_image_path = "full_image_highlighted.png"
+plt.savefig(full_image_path, dpi=300)
+print(f"Saved full image with highlight: {full_image_path}")
+
+# Create figure with zoomed-in region
+fig_zoom, axes_zoom = plt.subplots(2, 2, figsize=(12, 10))
+
+for ax, title, img in zip(axes_zoom.flat, titles, images):
+    ax.set_title(f"{title} (Zoomed)")
+    im = ax.imshow(img[y_min:y_max, x_min:x_max], aspect='auto', cmap=cmap_choice, vmin=vmin, vmax=vmax)
+    ax.invert_yaxis()
+    plt.colorbar(im, ax=ax)
+
+plt.tight_layout()
+
+# Save zoomed-in region
+zoomed_image_path = "zoomed_region.png"
+plt.savefig(zoomed_image_path, dpi=300)
+print(f"Saved zoomed-in image: {zoomed_image_path}")
+
 plt.show()

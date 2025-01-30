@@ -9,8 +9,8 @@ import matplotlib
 matplotlib.use('TkAgg')
 
 # Load the .mat file and extract the image
-file_path = "iinfft/data/C22_1.mat"
-mat_data = h5py.File(file_path,'r')
+file_path = "iinfft/data/tic.mat"
+mat_data = loadmat(file_path)
 image = mat_data['M']  # Replace with your variable name
 
 # Ensure the image is in a usable format
