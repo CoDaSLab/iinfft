@@ -44,7 +44,7 @@ if sum(idx) % 2 != 0:
 
 dat_clean = dat[idx].copy()
 h_k = -(N // 2 ) + np.arange(N)
-AhA = sym_matrix.compute_symmetric_matrix(t[idx],h_k)
+AhA = compute_sym_matrix_optimized(t[idx],h_k)
 
 ftot, _, _, _ = infft(t[idx], dat[idx] - np.mean(dat[idx]),N=N,AhA=AhA,w=w)
 ytot = adjoint(t,ftot) + np.mean(dat[idx])
