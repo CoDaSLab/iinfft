@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 from nfft import nfft as adjoint #CHANGE IN CONVENTION
 from nfft import nfft_adjoint as nfft #CHANGE IN CONVENTION
-from scipy.linalg import lu
-import sym_matrix
+from scipy.linalg import lu,toeplitz
+#import sym_matrix
 
 def ndft_mat(x,N):
     #non-equispaced discrete Fourier transform Matrix
@@ -151,7 +151,7 @@ def infft_2d(data, N, AhA=None, w=None):
             mtot_list.append(0)
             continue
 
-        AAh = sym_matrix.compute_symmetric_matrix(t[idx], h_k)
+        AAh = compute_sym_matrix_optimized(t[idx], h_k)
 
         if np.sum(idx) % 2 != 0:
             idx[np.where(idx)[0][-1]] = False  # Adjust to even number of samples if needed
@@ -204,4 +204,35 @@ def adjoint_transform_2d(transformed_data, mtot, data_shape):
         reconstructed_data[:, jj] = np.abs(reconstructed_column)
 
     return reconstructed_data
+
+def compute_sym_matrix_optimized(f_j, h_k):
+    """
+    Compute the inner product matrix when h_k is equally spaced.
+    That is, compute the Toeplitz matrix A with
+        A[k1, k2] = sum_j exp(2πi * f_j * (h_k[k2] - h_k[k1])),
+    where h_k[k] = h0 + k*d.
+    """
+    f_j = np.asarray(f_j, dtype=float)
+    h_k = np.asarray(h_k, dtype=float)
+    N = h_k.size
+
+    # Verify that h_k is equally spaced.
+    d = h_k[1] - h_k[0]
+    if not np.allclose(np.diff(h_k), d):
+        raise ValueError("h_k must be equally spaced for a Toeplitz structure.")
+
+    # Compute the unique values for the first column.
+    # The lag for entry (0, k) is h_k[k] - h_k[0] = d * k.
+    lags = d * np.arange(N)
+    col = np.array([np.sum(np.exp(-2 * np.pi * 1j * f_j * lag)) for lag in lags])
+
+    # For a Toeplitz matrix, the entry A[i,j] depends only on (j-i).
+    # Since A[0,j] is given by 'col', we build the full matrix.
+    A = toeplitz(col)
+    
+    # For numerical precision, enforce that the diagonal is exactly M.
+    # Here, on the diagonal, lag=0 so exp(0)=1, and sum_j 1 = len(f_j).
+    np.fill_diagonal(A, len(f_j))
+    
+    return A
 

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from iinfft.iinfft import *
-import sym_matrix
+#import sym_matrix
 import matplotlib
 from scipy.io import loadmat
 
@@ -12,7 +12,7 @@ image = np.load('iinfft/data/modified_image.npy')
 
 # Forward transform
 N = 128
-w = sobk(N, 1, 2, 1e-2)
+w = sobk(N, 0.5, 3, 1e-1)
 transformed_data, mtot = infft_2d(image, N, w=w)
 
 # Adjoint transform (reconstruction)
@@ -50,11 +50,13 @@ titles = ["Original TIC", "TIC with NaNs", "Reconstruction", "Original with Inte
 images = [original_image, image, reconstructed_data, interpolated_image]
 
 for ax, title, img in zip(axes.flat, titles, images):
-    ax.set_title(title)
+    ax.set_title(title,fontsize=16)
     im = ax.imshow(img, aspect='auto', cmap=cmap_choice, vmin=vmin, vmax=vmax)
     ax.invert_yaxis()
     ax.add_patch(plt.Rectangle((x_min, y_min), x_max - x_min, y_max - y_min,
                                edgecolor='red', facecolor='none', linewidth=2))
+    ax.set_xlabel("Modulation No.")  # Add your custom label here
+    ax.set_ylabel("Acquisition No.")
     plt.colorbar(im, ax=ax)
 
 plt.tight_layout()

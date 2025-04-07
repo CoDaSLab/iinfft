@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from iinfft.iinfft import *
 plt.style.use('tableau-colorblind10')
 import pandas as pd
-import sym_matrix
+#import sym_matrix
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -23,33 +23,15 @@ inverse_mat = np.zeros((N,df.shape[1]-1),dtype="complex128")
 #w = fjr(N)
 w = sobk(N,1,2,1e-2)
 
-dat = data_raw[:,0]
+dat = data_raw[:,4]
 
 idx = dat != -9999
 if sum(idx) % 2 != 0:
     idx = change_last_true_to_false(idx)
 
-
-# A1 = ndft_mat(t[idx],N)
-# AhA1 = A1.H @ A1
-
 dat_clean = dat[idx].copy()
 h_k = -(N // 2 ) + np.arange(N)
-AhA = sym_matrix.compute_symmetric_matrix(t[idx],h_k)
-
-# fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-# # First plot: Imaginary part of sym_mat
-# axs[0].imshow(np.imag(AhA), cmap='viridis', aspect='auto')
-# axs[0].set_title('Imaginary Part of sym_mat')
-# axs[0].set_xlabel('Columns')
-# axs[0].set_ylabel('Rows')
-
-# # Second plot: Imaginary part of A.H@A
-# axs[1].imshow(np.imag(AhA1), cmap='viridis', aspect='auto')
-# axs[1].set_title('Imaginary Part of A.H@A')
-# axs[1].set_xlabel('Columns')
-# plt.tight_layout()
-# plt.savefig('side_by_side_mult.png')
+AhA = compute_sym_matrix_optimized(t[idx],h_k)
 
 ftot, _, _, _ = infft(t[idx], dat[idx] - np.mean(dat[idx]),N=N,AhA=AhA,w=w)
 ytot = adjoint(t,ftot) + np.mean(dat[idx])
